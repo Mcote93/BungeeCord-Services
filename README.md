@@ -4,8 +4,9 @@ Fichier pour lancer Bungeecord en tant que services Compatible Centos 6.x &amp; 
 ##Installations
 Pour commencer nous allons créer un utilisateur pour améliorer votre sécurité
 
-useradd BungeeCord
+Tutoriel a venir...
 
+<<<<<<< HEAD
 Nous allons maintenant entré dans le dossier de ce compte et télécharger BungeeCord.jar
 
 cd /home/BungeeCord && wget http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar
@@ -26,6 +27,9 @@ Plus d'informations a venir...
 
 
 ##les Variables importantes
+=======
+##les Variables importantes du fichier
+>>>>>>> origin/master
 SERVICE = Nom de votre fichier .jar
 USERNAME =  Nom d'utilisateur de votre serveur Minecraft/BungeeCord
 MCPATH = Directory ou est votre fichier .jar
