@@ -6,10 +6,13 @@ Pour commencer nous allons créer un utilisateur pour améliorer votre sécurit�
 
 useradd BungeeCord
 
-Nous allons maintenant entré dans le dossier de ce compte
+Nous allons maintenant entré dans le dossier de ce compte et télécharger BungeeCord.jar
 
-cd /etc/init.d && git clone git://github.com/Mcote93/BungeeCord-Services.git bungeecord
+cd /home/BungeeCord && wget http://ci.md-5.net/job/BungeeCord/lastSuccessfulBuild/artifact/bootstrap/target/BungeeCord.jar
 
+Intallation du script qui rend BungeeCord comme un services de votre serveur
+
+cd /etc/init.d && wget https://raw.githubusercontent.com/Mcote93/BungeeCord-Services/master/bungeecord && chmod +x bungeecord
 
 Mettre en place le cron Job
  
