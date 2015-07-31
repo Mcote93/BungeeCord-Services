@@ -8,7 +8,7 @@ useradd BungeeCord
 
 Nous allons maintenant entré dans le dossier de ce compte
 
-cd /home/BungeeCord && git clone git://github.com/Mcote93/BungeeCord-Services.git bungeecord
+cd /etc/init.d && git clone git://github.com/Mcote93/BungeeCord-Services.git bungeecord
 
 
 Mettre en place le cron Job
