@@ -1,0 +1,132 @@
+#!/bin/bash
+# /etc/init.d/BungeeCord
+
+  #Settings
+      SERVICE='BungeeCord'
+      USERNAME="root"
+      MCPATH='/home/bungeecord/'
+
+  ME=`whoami`
+  as_user() {
+    if [ "$ME" == "$USERNAME" ] ; then
+      bash -c "$1"
+    else
+      su - $USERNAME -c "$1"
+    fi
+  }
+
+    fn_printok(){
+        echo -en "\r\033[K[\e[0;32m  OK  \e[0;39m] $@"
+    }
+
+    fn_printinfo(){
+        echo -en "\r\033[K[\e[0;36m INFO \e[0;39m] $@"
+    }
+
+
+    fn_printwarn(){
+        echo -en "\r\033[K[\e[1;33m WARN \e[0;39m] $@"
+    }
+
+    mc_start() {
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+        then
+          fn_printinfo "$SERVICE was already running!"
+        else
+          cd $MCPATH
+          as_user "cd $MCPATH && screen -dmS minecraft java -Xmx3072M -Xms1024M -jar BungeeCord.jar  nogui"
+          sleep 7
+
+          if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+          then
+            fn_printok "$SERVICE is now running."
+          else
+            fn_printwarn "Could not start $SERVICE."
+          fi
+
+        fi
+    }
+
+    mc_stop() {
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+        then
+          as_user "screen -p 0 -S minecraft -X eval 'stuff \"alert &e&oRedemarrage du serveur dans 1 minutes \"\015'"
+          sleep 60
+          as_user "screen -p 0 -S minecraft -X eval 'stuff \"end\"\015'"
+          sleep 7
+          fn_printok " $SERVICE was now shutdown."
+        else
+          fn_printinfo "$SERVICE was not running."
+        fi
+
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+        then
+          fn_printwarn "$SERVICE could not be shut down... still running."
+        else
+          fn_printok "$SERVICE is close."
+        fi
+    }
+
+    mc_monitor(){
+
+        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+
+        then
+            fn_printok "$SERVICE is running."
+        else
+            fn_printwarn " Restarting $SERVICE..."
+            cd $MCPATH
+            as_user "cd $MCPATH && screen -dmS minecraft java -Xmx3072M -Xms1024M -jar BungeeCord.jar  nogui"
+            sleep 7
+
+            if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+            then
+                fn_printok "$SERVICE is now reboot."
+            else
+                fn_printwarn "Could not restart $SERVICE."
+            fi
+        fi
+
+    }
+
+
+      #Start-Stop here
+      case "$1" in
+        start)
+          mc_start
+          echo -en "\n"
+          ;;
+        stop)
+          mc_stop
+          echo -en "\n"
+          ;;
+        restart)
+          mc_stop
+          echo -en "\n"
+          mc_start
+          echo -en "\n"
+          ;;
+        monitor)
+          mc_monitor
+
+          echo -en "\n"
+          ;;
+        status)
+
+          if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+          then
+            fn_printok "$SERVICE is running."
+          else
+            fn_printwarn "$SERVICE is not running."
+          fi
+
+          echo -en "\n"
+          ;;
+
+        *)
+        echo "Usage: /etc/init.d/BungeeCord {start|stop|status|monitor|restart}"
+        exit 1
+        ;;
+      esac
+
+      exit 0
