@@ -26,11 +26,7 @@ et pour finir les commandes disponible son ;
 
 service bungeecord {start|stop|status|monitor|restart}
 
-
-##les Variables importantes
-=======
 ##les Variables importantes du fichier
->>>>>>> origin/master
 SERVICE = Nom de votre fichier .jar
 USERNAME =  Nom d'utilisateur de votre serveur Minecraft/BungeeCord
 MCPATH = Directory ou est votre fichier .jar
