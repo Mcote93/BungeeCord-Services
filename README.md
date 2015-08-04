@@ -24,7 +24,6 @@ ajouter cette commande a la fin de votre fichier ;
 * */12 * * * /etc/init.d/bungeecord backup
 0 6 * * * /etc/init.d/bungeecord mail-log >/dev/null 2>&1
 
-
 et pour finir les commandes disponible son ;
 
 service bungeecord {start|stop|status|monitor|restart}
