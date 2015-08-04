@@ -20,7 +20,10 @@ vi /etc/crontab
 
 ajouter cette commande a la fin de votre fichier ;
  
-10 * * * * service bungeecord monitor
+*/10 * * * * /etc/init.d/bungeecord monitor
+* */12 * * * /etc/init.d/bungeecord backup
+0 6 * * * /etc/init.d/bungeecord mail-log >/dev/null 2>&1
+
 
 et pour finir les commandes disponible son ;
 
