@@ -10,7 +10,7 @@
 
     jar="$MCPATH/BungeeCord.jar"
 
-    email="mcotemw@icloud.com"
+    email="vous@domaine.com"
     emailnotification='on'
 
     backupdir='backup'
