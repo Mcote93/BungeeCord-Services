@@ -2,18 +2,67 @@
 # /etc/init.d/BungeeCord
 
   #Settings
-      SERVICE='BungeeCord'
-      USERNAME="root"
-      MCPATH='/home/bungeecord/'
+    SERVICE='BungeeCord'
+    USERNAME="root"
+    MCPATH='/home/bungeecord'
 
-  ME=`whoami`
-  as_user() {
-    if [ "$ME" == "$USERNAME" ] ; then
-      bash -c "$1"
-    else
-      su - $USERNAME -c "$1"
-    fi
-  }
+    logsdir='${MCPATH}/logs'
+
+    jar="$MCPATH/BungeeCord.jar"
+
+    email="mcotemw@icloud.com"
+    emailnotification='on'
+
+    backupdir='backup'
+    scriptlog="${MCPATH}/logs/${SERVICE}-script.log"
+    emaillog="${MCPATH}/logs/${SERVICE}-email.log"
+    backupname="$SERVICE-$(date '+%Y-%m-%d-%H%M%S')"
+
+
+##### Script #####
+# Do not edit
+# unless you know
+# what you are doing
+
+    ME=`whoami`
+    as_user() {
+        if [ "$ME" == "$USERNAME" ] ; then
+          bash -c "$1"
+        else
+          su - $USERNAME -c "$1"
+        fi
+    }
+
+    fn_distro(){
+        arch=$(uname -m)
+        kernel=$(uname -r)
+        if [ -f /etc/lsb-release ]; then
+            os=$(lsb_release -s -d)
+        elif [ -f /etc/debian_version ]; then
+            os="Debian $(cat /etc/debian_version)"
+        elif [ -f /etc/redhat-release ]; then
+            os=$(cat /etc/redhat-release)
+        else
+            os="$(uname -s) $(uname -r)"
+        fi
+    }
+
+
+    fn_uptime(){
+        uptime=$(</proc/uptime)
+        uptime=${uptime%%.*}
+        minutes=$(( uptime/60%60 ))
+        hours=$(( uptime/60/60%24 ))
+        days=$(( uptime/60/60/24 ))
+    }
+
+    fn_scriptlog(){
+        echo -e "$(date '+%b %d %H:%M:%S') ${SERVICE}: '$1'" >> ${scriptlog}
+    }
+
+    fn_load(){
+        load=$(uptime|awk -F 'load average' '{ print $2 }')
+    }
 
     fn_printok(){
         echo -en "\r\033[K[\e[0;32m  OK  \e[0;39m] $@"
@@ -23,70 +72,60 @@
         echo -en "\r\033[K[\e[0;36m INFO \e[0;39m] $@"
     }
 
-
     fn_printwarn(){
         echo -en "\r\033[K[\e[1;33m WARN \e[0;39m] $@"
     }
 
+
     mc_start() {
         if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
         then
-          fn_printinfo "$SERVICE was already running!"
+            fn_printwarn "$SERVICE was already running!"
         else
-          cd $MCPATH
-          as_user "cd $MCPATH && screen -dmS minecraft java -Xmx3072M -Xms1024M -jar BungeeCord.jar  nogui"
-          sleep 7
-
-          if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
-          then
+            cd $MCPATH
+            as_user "cd $MCPATH && screen -dmS $SERVICE java -Xmx3072M -Xms1024M -jar $jar  nogui"
+            fn_scriptlog "Server Started"
+            sleep 7
             fn_printok "$SERVICE is now running."
-          else
-            fn_printwarn "Could not start $SERVICE."
-          fi
-
         fi
     }
 
     mc_stop() {
         if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
         then
-          as_user "screen -p 0 -S minecraft -X eval 'stuff \"alert &e&oRedemarrage du serveur dans 1 minutes \"\015'"
-          sleep 60
-          as_user "screen -p 0 -S minecraft -X eval 'stuff \"end\"\015'"
+          as_user "screen -p 0 -S $SERVICE -X eval 'stuff \"end\"\015'"
           sleep 7
+          fn_scriptlog "Server Closed"
           fn_printok " $SERVICE was now shutdown."
         else
           fn_printinfo "$SERVICE was not running."
         fi
-
-        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
-        then
-          fn_printwarn "$SERVICE could not be shut down... still running."
-        else
-          fn_printok "$SERVICE is close."
-        fi
     }
 
-    mc_monitor(){
+    fn_emailnotification(){
+        fn_distro
+        fn_uptime
+        fn_load
+        {
+            echo -e "========================================\n${SERVICE} details\n====================================\n"
+            echo -e "Server: ${SERVICE}"
+            echo -e "Failure reason: ${failurereason}"
+            echo -e "Action Taken: ${actiontaken}\n"
+            echo -e "========================================\nServer details\n============================================\n"
+            echo -e "Date: $(date)"
+            echo -e "Distro: ${os}"
+            echo -e "Arch: ${arch}"
+            echo -e "Kernel: ${kernel}"
+            echo -e "Hostname: $HOSTNAME"
+            echo -e "Uptime: ${days}d, ${hours}h, ${minutes}m"
+            echo -e "Avg Load${load}\n"
+            echo -e "Script log\n===================\n"
+        }|tee "$emaillog" > /dev/null 2>&1
 
-        if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+        tail -50 "${scriptlog}" >> "${emaillog}"
 
-        then
-            fn_printok "$SERVICE is running."
-        else
-            fn_printwarn " Restarting $SERVICE..."
-            cd $MCPATH
-            as_user "cd $MCPATH && screen -dmS minecraft java -Xmx3072M -Xms1024M -jar BungeeCord.jar  nogui"
-            sleep 7
-
-            if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
-            then
-                fn_printok "$SERVICE is now reboot."
-            else
-                fn_printwarn "Could not restart $SERVICE."
-            fi
-        fi
-
+        mail -s "Logs Serveur $SERVICE" ${email} < "${emaillog}"
+        fn_printinfo "Sent email notification to ${email}"
     }
 
 
@@ -97,34 +136,65 @@
           echo -en "\n"
           ;;
         stop)
-          mc_stop
-          echo -en "\n"
+            as_user "screen -p 0 -S $SERVICE -X eval 'stuff \"alert &e&o Arret du serveur dans 20secondes!\"\015'"
+            fn_scriptlog "Arret du serveur"
+            sleep 20
+            mc_stop
+            echo -en "\n"
           ;;
         restart)
-          mc_stop
-          echo -en "\n"
-          mc_start
-          echo -en "\n"
+            as_user "screen -p 0 -S $SERVICE -X eval 'stuff \"alert &e&o Redemarrage du serveur dans 30secondes!\"\015'"
+            fn_scriptlog "Redemarage serveur"
+            sleep 30
+            mc_stop
+            echo -en "\n"
+            mc_start
+            echo -en "\n"
           ;;
         monitor)
-          mc_monitor
-
-          echo -en "\n"
+            if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
+            then
+                echo -en "$SERVICE is running."
+            else
+                echo -en " Restarting $SERVICE..."
+                mc_start
+                sleep 7
+                echo -en "$SERVICE is now reboot."
+            fi
+            echo -en "\n"
           ;;
-        status)
+        backup)
+            fn_printok "Starting backup $SERVICE"
+            echo -en "\n"
 
-          if ps ax | grep -v grep | grep -v -i SCREEN | grep $SERVICE > /dev/null
-          then
-            fn_printok "$SERVICE is running."
-          else
-            fn_printwarn "$SERVICE is not running."
-          fi
+            as_user "screen -p 0 -S $SERVICE -X eval 'stuff \"alert &e&oStart Server Backup\"\015'"
+            fn_scriptlog "Start Backup ${backupname}"
+            sleep 30
+            cd "$MCPATH"
+            mkdir -pv "${backupdir}" > /dev/null 2>&1
+            tar -cvzf "${backupdir}/${backupname}.tar.gz" --exclude "${backupdir}" *
+            fn_scriptlog "Backup ${backupname} Complete"
+            as_user "screen -p 0 -S $SERVICE -X eval 'stuff \"alert &e&oServer Backup Complete\"\015'"
+            fn_printok "${SERVICE} Backup complete"
+            echo -en "\n"
+          ;;
 
-          echo -en "\n"
+          mail-log)
+            fn_scriptlog "Send Email-logs"
+            if [ "${emailnotification}" = "on" ]; then
+                failurereason=""
+                actiontaken=""
+                fn_emailnotification
+            else
+                fn_printinfo "Email notification not enabled"
+                fn_scriptlog "Email notification not enabled"
+            fi
+            sleep 1
+            echo -en "\n"
           ;;
 
         *)
-        echo "Usage: /etc/init.d/BungeeCord {start|stop|status|monitor|restart}"
+        echo "Usage: /etc/init.d/$SERVICE {start|stop|monitor|backup|restart|mail-log}"
         exit 1
         ;;
       esac
